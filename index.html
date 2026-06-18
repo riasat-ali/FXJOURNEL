@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FXJournal</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/charts.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" defer></script>
+</head>
+<body>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">FX</div>
+      <div class="logo-text-wrap">
+        <span class="logo-text">FXJournal</span>
+        <span class="logo-sub">Pro Trader</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="dashboard">
+        <span class="nav-icon">⊞</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-page="new-trade">
+        <span class="nav-icon">＋</span>
+        <span>New Trade</span>
+      </a>
+      <a href="#" class="nav-item" data-page="history">
+        <span class="nav-icon">☰</span>
+        <span>Trade History</span>
+      </a>
+      <a href="#" class="nav-item" data-page="analytics">
+        <span class="nav-icon">◎</span>
+        <span>Analytics</span>
+      </a>
+    </nav>
+
+    <!-- Equity Widget in Sidebar -->
+    <div class="sidebar-equity">
+      <div class="seq-label">Account Equity</div>
+      <div class="seq-value" id="sidebarEquity">$0.00</div>
+      <div class="seq-row">
+        <span class="seq-sub">Starting: <strong id="sidebarStartEquity">—</strong></span>
+        <span class="seq-pnl" id="sidebarPnlPct">—</span>
+      </div>
+      <div class="seq-bar-track">
+        <div class="seq-bar-fill" id="sidebarEquityBar" style="width:0%"></div>
+      </div>
+      <button class="seq-edit-btn" id="btnEditEquity">⚙ Set Equity</button>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="btn-export" id="btnExport">⬇ Export CSV</button>
+      <button class="btn-import" id="btnImportTrigger">⬆ Import CSV</button>
+      <input type="file" id="csvFileInput" accept=".csv" style="display:none;" />
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <header class="topbar">
+      <h1 class="page-title" id="pageTitle">Dashboard</h1>
+      <div class="topbar-right">
+        <span class="date-display" id="currentDate"></span>
+        <button class="btn-primary topbar-btn" id="btnQuickTrade">+ New Trade</button>
+      </div>
+    </header>
+
+    <!-- DASHBOARD -->
+    <section class="page active" id="page-dashboard">
+
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card accent-blue">
+          <span class="stat-label">Total Trades</span>
+          <span class="stat-value" id="statTotalTrades">0</span>
+          <span class="stat-sub" id="statSubTrades">No trades yet</span>
+        </div>
+        <div class="stat-card accent-green">
+          <span class="stat-label">Win Rate</span>
+          <span class="stat-value green" id="statWinRate">0%</span>
+          <span class="stat-sub" id="statSubWins">0W / 0L</span>
+        </div>
+        <div class="stat-card accent-pnl">
+          <span class="stat-label">Total P&L</span>
+          <span class="stat-value" id="statTotalPnl">$0.00</span>
+          <span class="stat-sub">Realized USD</span>
+        </div>
+        <div class="stat-card accent-purple">
+          <span class="stat-label">Current Equity</span>
+          <span class="stat-value blue" id="statCurrentEquity">$0.00</span>
+          <span class="stat-sub" id="statEquityChange">Set starting equity</span>
+        </div>
+        <div class="stat-card accent-blue">
+          <span class="stat-label">Avg R:R</span>
+          <span class="stat-value" id="statAvgRR">—</span>
+          <span class="stat-sub">Risk/Reward</span>
+        </div>
+        <div class="stat-card accent-green">
+          <span class="stat-label">Profit Factor</span>
+          <span class="stat-value" id="statProfitFactor">—</span>
+          <span class="stat-sub">Gross P / Gross L</span>
+        </div>
+        <div class="stat-card accent-green">
+          <span class="stat-label">Best Trade</span>
+          <span class="stat-value green" id="statBestTrade">$0.00</span>
+          <span class="stat-sub">Single trade max</span>
+        </div>
+        <div class="stat-card accent-red">
+          <span class="stat-label">Worst Trade</span>
+          <span class="stat-value red" id="statWorstTrade">$0.00</span>
+          <span class="stat-sub">Single trade min</span>
+        </div>
+      </div>
+
+      <!-- Streak Banner -->
+      <div class="streak-banner" id="streakBanner" style="display:none">
+        <span id="streakText"></span>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <h3 class="chart-title">Equity Curve</h3>
+            <span class="chart-pill" id="equityPill">—</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="equityChart" role="img" aria-label="Equity curve over time">No data yet.</canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <h3 class="chart-title">Daily P&L</h3>
+            <span class="chart-pill">Last 14 days</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="dailyPnlChart" role="img" aria-label="Daily profit and loss bar chart">No data yet.</canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-head">
+          <h3 class="section-title">Recent Trades</h3>
+          <a href="#" class="section-link" data-page="history">View all →</a>
+        </div>
+        <div class="table-wrap">
+          <table class="trade-table">
+            <thead>
+              <tr>
+                <th>Date</th><th>Symbol</th><th>Type</th>
+                <th>Entry</th><th>Exit</th><th>Pips</th>
+                <th>P&L</th><th>Session</th><th>Result</th>
+              </tr>
+            </thead>
+            <tbody id="recentTradesTbody">
+              <tr><td colspan="9" class="empty-msg">No trades yet. Add your first trade!</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- NEW TRADE -->
+    <section class="page" id="page-new-trade">
+      <div class="form-card">
+        <h2 class="form-heading">Log New Trade</h2>
+        <div class="form-grid">
+
+          <div class="form-group">
+            <label for="tradeDate">Date & Time</label>
+            <input type="datetime-local" id="tradeDate" />
+          </div>
+          <div class="form-group">
+            <label for="tradeSymbol">Symbol</label>
+            <input type="text" id="tradeSymbol" placeholder="e.g. EURUSD, XAUUSD" />
+          </div>
+
+          <div class="form-group">
+            <label for="tradeType">Direction</label>
+            <select id="tradeType">
+              <option value="">Select</option>
+              <option value="buy">Buy</option>
+              <option value="sell">Sell</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="tradeLot">Lot Size</label>
+            <input type="number" id="tradeLot" placeholder="e.g. 0.01" step="0.01" />
+          </div>
+
+          <div class="form-group">
+            <label for="tradeEntry">Entry Price</label>
+            <input type="number" id="tradeEntry" placeholder="e.g. 1.08500" step="0.00001" />
+          </div>
+          <div class="form-group">
+            <label for="tradeExit">Exit Price</label>
+            <input type="number" id="tradeExit" placeholder="e.g. 1.09000" step="0.00001" />
+          </div>
+
+          <div class="form-group">
+            <label for="tradeSL">Stop Loss</label>
+            <input type="number" id="tradeSL" placeholder="e.g. 1.08200" step="0.00001" />
+          </div>
+          <div class="form-group">
+            <label for="tradeTP">Take Profit</label>
+            <input type="number" id="tradeTP" placeholder="e.g. 1.09200" step="0.00001" />
+          </div>
+
+          <div class="form-group calculated">
+            <label>Pips</label>
+            <input type="text" id="tradePips" readonly placeholder="Auto" />
+          </div>
+          <div class="form-group calculated">
+            <label>P&L (USD)</label>
+            <input type="text" id="tradePnl" readonly placeholder="Auto" />
+          </div>
+          <div class="form-group calculated">
+            <label>R:R Ratio</label>
+            <input type="text" id="tradeRR" readonly placeholder="Auto" />
+          </div>
+          <div class="form-group calculated">
+            <label>Result</label>
+            <input type="text" id="tradeResult" readonly placeholder="Auto" />
+          </div>
+
+          <div class="form-group">
+            <label for="tradeSession">Session</label>
+            <select id="tradeSession">
+              <option value="">Select Session</option>
+              <option value="Asian">Asian</option>
+              <option value="London">London</option>
+              <option value="New York">New York</option>
+              <option value="Pacific">Pacific</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="tradeSetup">Setup</label>
+            <select id="tradeSetup">
+              <option value="">Select Setup</option>
+              <option value="Breakout">Breakout</option>
+              <option value="Reversal">Reversal</option>
+              <option value="Trend">Trend Follow</option>
+              <option value="Range">Range</option>
+              <option value="News">News Trade</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="tradeEmotion">Emotion</label>
+            <select id="tradeEmotion">
+              <option value="">Select Emotion</option>
+              <option value="Confident">Confident</option>
+              <option value="Neutral">Neutral</option>
+              <option value="FOMO">FOMO</option>
+              <option value="Revenge">Revenge Trade</option>
+              <option value="Anxious">Anxious</option>
+              <option value="Greedy">Greedy</option>
+            </select>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="tradeNotes">Notes</label>
+            <textarea id="tradeNotes" rows="3" placeholder="Why did you take this trade? What did you observe?"></textarea>
+          </div>
+
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" id="btnSaveTrade">Save Trade</button>
+          <button class="btn-secondary" id="btnClearForm">Clear</button>
+        </div>
+        <input type="hidden" id="editTradeId" value="" />
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="page" id="page-history">
+      <div class="filters-bar">
+        <input type="text" id="filterSymbol" placeholder="Symbol..." class="filter-input" />
+        <select id="filterSession" class="filter-input">
+          <option value="">All Sessions</option>
+          <option value="Asian">Asian</option>
+          <option value="London">London</option>
+          <option value="New York">New York</option>
+          <option value="Pacific">Pacific</option>
+        </select>
+        <select id="filterResult" class="filter-input">
+          <option value="">All Results</option>
+          <option value="Win">Win</option>
+          <option value="Loss">Loss</option>
+          <option value="BE">Break Even</option>
+        </select>
+        <input type="date" id="filterDateFrom" class="filter-input" title="From date" />
+        <input type="date" id="filterDateTo" class="filter-input" title="To date" />
+        <button class="btn-secondary" id="btnResetFilters">Reset</button>
+      </div>
+      <div class="section-card">
+        <div class="table-wrap">
+          <table class="trade-table" id="historyTable">
+            <thead>
+              <tr>
+                <th>Date</th><th>Symbol</th><th>Type</th><th>Entry</th>
+                <th>Exit</th><th>Lot</th><th>Pips</th><th>P&L</th>
+                <th>R:R</th><th>Session</th><th>Emotion</th><th>Result</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="historyTbody">
+              <tr><td colspan="13" class="empty-msg">No trades found.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section class="page" id="page-analytics">
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <h3 class="chart-title">Win Rate by Symbol</h3>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="symbolChart" role="img" aria-label="Win rate per trading symbol">No data yet.</canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <h3 class="chart-title">Performance by Session</h3>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="sessionChart" role="img" aria-label="P&L by trading session">No data yet.</canvas>
+          </div>
+        </div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <h3 class="chart-title">Performance by Day</h3>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="dayChart" role="img" aria-label="Performance by day of week">No data yet.</canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-head">
+            <h3 class="chart-title">Emotion vs Win Rate</h3>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="emotionChart" role="img" aria-label="Win rate per emotion state">No data yet.</canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Equity Modal -->
+  <div class="modal-overlay" id="equityModal">
+    <div class="modal-box">
+      <h3 class="modal-title">Set Account Equity</h3>
+      <p class="modal-desc">Enter your starting balance and current equity so FXJournal can track your account growth.</p>
+      <div class="modal-fields">
+        <div class="form-group">
+          <label for="inputStartEquity">Starting Balance (USD)</label>
+          <input type="number" id="inputStartEquity" placeholder="e.g. 10000" step="1" />
+        </div>
+        <div class="form-group">
+          <label for="inputCurrentEquity">Current Equity (USD)</label>
+          <input type="number" id="inputCurrentEquity" placeholder="e.g. 10500" step="1" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-primary" id="btnSaveEquity">Save</button>
+        <button class="btn-secondary" id="btnCancelEquity">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/trades.js"></script>
+  <script src="js/filters.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
